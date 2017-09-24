@@ -102,6 +102,8 @@ public class OFEndpoint {
 		Mensaje msj= new Mensaje();
 		msj.setMensaje(obj.getString("mensaje"));
 		msj.setUsers(obj.getString("users"));	
+		msj.setLatitud(obj.getString("latitud"));
+		msj.setLongitud(obj.getString("longitud"));
 		String[] result = msj.getUsers().split("&&");
 		
 		
@@ -179,7 +181,7 @@ public class OFEndpoint {
     		    }
     		});
     		try {
-    		    newChat.sendMessage(msj.getMensaje());
+    		    newChat.sendMessage(msj.getMensaje()+"---"+msj.getLatitud()+"---"+msj.getLongitud());
     		}catch (XMPPException e) {
     			log.info("Error Delivering block");
     		}
