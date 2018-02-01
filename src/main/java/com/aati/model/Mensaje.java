@@ -2,7 +2,10 @@ package com.aati.model;
 
 import java.io.Serializable;
 
+import javax.websocket.Session;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import org.jivesoftware.smack.chat2.ChatManager;
 @XmlRootElement
 /*
  * 
@@ -18,6 +21,21 @@ public class Mensaje implements Serializable{
 	private String mensaje;
 	private String latitud;
 	private String longitud;
+	private String code;
+	private Session session;
+	private ChatManager chatManager;
+	/**
+	 * @return the chatManager
+	 */
+	public ChatManager getChatManager() {
+		return chatManager;
+	}
+	/**
+	 * @param chatManager the chatManager to set
+	 */
+	public void setChatManager(ChatManager chatManager) {
+		this.chatManager = chatManager;
+	}
 	public String getUsers() {
 		return users;
 	}
@@ -53,6 +71,30 @@ public class Mensaje implements Serializable{
 	 */
 	public void setLongitud(String longitud) {
 		this.longitud = longitud;
+	}
+	/**
+	 * @return the code
+	 */
+	public String getCode() {
+		return code;
+	}
+	/**
+	 * @param code the code to set
+	 */
+	public void setCode(String code) {
+		this.code = code;
+	}
+	/**
+	 * @return the session
+	 */
+	public Session getSession() {
+		return session;
+	}
+	/**
+	 * @param session the session to set
+	 */
+	public void setSession(Session session) {
+		this.session = session;
 	}
 	
 	
