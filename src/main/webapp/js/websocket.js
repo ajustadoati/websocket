@@ -1,4 +1,4 @@
-var wsUri = 'wss://' + location.host + '/websockets/chatroom';
+var wsUri = 'ws://' + location.host + '/chatroom';
 console.log(wsUri);
 var websocket = new WebSocket(wsUri);
 var textField = document.getElementById("textField");
