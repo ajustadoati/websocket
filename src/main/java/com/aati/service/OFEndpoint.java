@@ -34,9 +34,11 @@ import org.jivesoftware.smack.packet.Message;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.impl.JidCreate;
 
+import com.aati.model.Dispositivo;
 import com.aati.model.Mensaje;
 import com.aati.model.Notificacion;
 import com.aati.model.Response;
+import com.aati.util.Util;
 import com.google.gson.Gson;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
@@ -78,7 +80,7 @@ public class OFEndpoint {
   			   
   		    	String arr[]=from.toString().split("@");
   		    	String us=arr[0];
-  		    	Response response = getResponseByUserAndMessage(us, texto);
+  		    	Response response = Util.getResponseByUserAndMessage(us, texto);
   		    	System.out.println("Received from: " + response.getLatitud());
   		    	Gson gson = new Gson();
   		         String json = gson.toJson(response); 
@@ -121,11 +123,13 @@ public class OFEndpoint {
 			msj.setCode(String.valueOf(new Date().getTime()));
 			msj.setSession(session);
 			mensajes.add(msj);
+			List<Dispositivo> dispositivos= Util.getDevicesByListUsers(msj.getUsers());
 			String[] result = msj.getUsers().split("&&");
 			//Se recorre la lista de usuarios
 			//connect.getChatManager().addIncomingListener(getIncoming());
 	        for(String user : result){
 		        	log.info(">"+user+"<");
+		        	List<String> listDevicesForUser=Util.getDevicesForUser(dispositivos, user);
 		            user=user+"@ajustadoati.com";
 		            log.info("User: "+user);
 		        	
@@ -137,9 +141,9 @@ public class OFEndpoint {
 		  			ms.setBody(msj.getCode()+"---"+msj.getMensaje()+"---"+msj.getLatitud()+"---"+msj.getLongitud());
 		  			try {
 						chat.send(ms);
-						List<String> dispositivos = getDevicesByUser(user);
-						if(dispositivos!=null && dispositivos.size()>0){
-							sendNotifications(dispositivos, "Hola, Han realizado una petición: "+msj.getMensaje());
+						
+						if(listDevicesForUser!=null && listDevicesForUser.size()>0){
+							Util.sendNotifications(listDevicesForUser, "Hola, Han realizado una solicitud: "+msj.getMensaje());
 						}
 						
 					} catch (NotConnectedException e) {
@@ -175,6 +179,49 @@ public class OFEndpoint {
 		
 	}
 	
+	
+	
+	
+	
+	public static Session getSessionByCode(String code){
+		System.out.println("searching session");
+		for ( Mensaje mensaje : mensajes) {
+			if(mensaje.getCode().equals(code)){
+				System.out.println("session"+mensaje.getSession());
+				return mensaje.getSession();
+			}
+		}
+		return null;
+	}
+	
+	public Mensaje getMensajeBySession(Session session){
+		log.info("buscando mensaje");
+		for ( Mensaje mensaje : mensajes) {
+			if(mensaje.getSession().equals(session)){
+				log.info("session"+mensaje.getSession());
+				return mensaje;
+			}
+		}
+		return null;
+	}
+	
+	
+	
+	
+	static {
+        disableSslVerification();
+    }
+	
+	
+	@OnOpen
+	public void open(final Session session) {
+		 clientes.add(session);
+		log.info("Abriendo Websocket"+session);
+
+	}
+	
+	
+
 	private static void disableSslVerification() {
         try
         {
@@ -210,181 +257,4 @@ public class OFEndpoint {
             e.printStackTrace();
         }
     }
-	
-	public static Session getSessionByCode(String code){
-		System.out.println("searching session");
-		for ( Mensaje mensaje : mensajes) {
-			if(mensaje.getCode().equals(code)){
-				System.out.println("session"+mensaje.getSession());
-				return mensaje.getSession();
-			}
-		}
-		return null;
-	}
-	
-	public Mensaje getMensajeBySession(Session session){
-		log.info("buscando mensaje");
-		for ( Mensaje mensaje : mensajes) {
-			if(mensaje.getSession().equals(session)){
-				log.info("session"+mensaje.getSession());
-				return mensaje;
-			}
-		}
-		return null;
-	}
-	
-	public static void sendNotifications(List<String> dispositivos, String mensaje){
-		
-		Client client = Client.create();
-        WebResource webResource = client.resource("https://onesignal.com/api/v1/notifications");
-        Gson gson = new Gson();
-        
-        Notificacion notif= new Notificacion("d42e3099-ca74-4cde-bf95-6b7033f53b0f", dispositivos, mensaje);
-        System.out.println("gson:  "+gson.toJson(notif));
-
-        // POST method
-        ClientResponse response = webResource.accept("application/json")
-                .type("application/json").header("Authorization", "Basic ODU4NGFlNzktYzIzMi00MmEyLWFkMmEtNmFlMTE3ODg3OTVj").post(ClientResponse.class, gson.toJson(notif));
-
-        // check response status code
-        if (response.getStatus() != 200) {
-            throw new RuntimeException("Failed : HTTP error code : "
-                    + response.getStatus());
-        }
-
-        // display response
-        String output = response.getEntity(String.class);
-        System.out.println("Output from Server .... ");
-        System.out.println(output + "\n");
-
-	}
-	public static Response getResponseByUserAndMessage(String user, String message) {
-		HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
-		ClientConfig config = new DefaultClientConfig();
-		SSLContext ctx=null;
-		try {
-			ctx = SSLContext.getInstance("SSL");
-			ctx.init(null, myTrustManager, null);
-		} catch (NoSuchAlgorithmException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		} catch (KeyManagementException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		config.getProperties().put(HTTPSProperties.PROPERTY_HTTPS_PROPERTIES, new HTTPSProperties(hostnameVerifier, ctx));
-		Client client = Client.create(config);
-  	//Client client = Client.create();
-		System.out.println("realizando consulta a 9000************"+user);
-		WebResource webResource = client
-		   .resource("https://ajustadoati.com:9000/ajustadoati/usuario/"+user);
-
-		ClientResponse resp = webResource.accept("application/json")
-                 .get(ClientResponse.class);
-
-		if (resp.getStatus() != 200) {
-		   throw new RuntimeException("Failed : HTTP error code : "
-			+ resp.getStatus());
-		}else{
-			System.out.println("The request has passed the test:");
-		}
-
-		String output = resp.getEntity(String.class);
-		JSONObject obj=null;
-		Response response=null;
-		try {
-			obj = new JSONObject(output);
-			System.out.println("response:"+ obj);
-			System.out.println("latitud: "+obj.getDouble("latitud"));
-			response = new Response(user, message, obj.getDouble("latitud"), obj.getDouble("longitud"));
-	    	
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return response;
-	}
-	
-	
-	public static List<String> getDevicesByUser(String user) {
-		HostnameVerifier hostnameVerifier = HttpsURLConnection.getDefaultHostnameVerifier();
-		ClientConfig config = new DefaultClientConfig();
-		SSLContext ctx=null;
-		try {
-			ctx = SSLContext.getInstance("SSL");
-			ctx.init(null, myTrustManager, null);
-		} catch (NoSuchAlgorithmException e2) {
-			// TODO Auto-generated catch block
-			e2.printStackTrace();
-		} catch (KeyManagementException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		
-		config.getProperties().put(HTTPSProperties.PROPERTY_HTTPS_PROPERTIES, new HTTPSProperties(hostnameVerifier, ctx));
-		Client client = Client.create(config);
-  	//Client client = Client.create();
-		System.out.println("realizando consulta a 9000************"+user);
-		WebResource webResource = client
-		   .resource("https://ajustadoati.com:9000/ajustadoati/dispositivo/usuario"+user);
-
-		ClientResponse resp = webResource.accept("application/json")
-                 .get(ClientResponse.class);
-
-		if (resp.getStatus() != 200) {
-		   throw new RuntimeException("Failed : HTTP error code : "
-			+ resp.getStatus());
-		}else{
-			System.out.println("The request has passed the test:");
-		}
-
-		String output = resp.getEntity(String.class);
-		JSONArray obj=null;
-		List<String> dispositivos= new ArrayList<String>();
-		try {
-			obj= new JSONArray(output);
-			
-			for(int i=0;i<obj.length();i++){
-				JSONObject ob = (JSONObject)obj.getJSONObject(i);
-				dispositivos.add(ob.getString("uuid"));
-				
-			}
-	    	
-		} catch (JSONException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return dispositivos;
-	}
-	
-	
-	static {
-        disableSslVerification();
-    }
-	
-	
-	@OnOpen
-	public void open(final Session session) {
-		 clientes.add(session);
-		log.info("Abriendo Websocket"+session);
-
-	}
-	
-	final static TrustManager[] myTrustManager = new TrustManager[]{new X509TrustManager() {
-		
-			public X509Certificate[] getAcceptedIssuers() {
-				// TODO Auto-generated method stub
-				return null;
-			}
-			public void checkServerTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-				// TODO Auto-generated method stub
-			}
-			
-			public void checkClientTrusted(X509Certificate[] chain, String authType) throws CertificateException {
-				// TODO Auto-generated method stub
-			}
-		}
-	};
-
 }
