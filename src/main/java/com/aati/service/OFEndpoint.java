@@ -3,7 +3,6 @@ package com.aati.service;
 import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
-import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -23,8 +22,6 @@ import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
-
-import org.codehaus.jettison.json.JSONArray;
 import org.codehaus.jettison.json.JSONException;
 import org.codehaus.jettison.json.JSONObject;
 import org.jivesoftware.smack.SmackException.NotConnectedException;
@@ -33,19 +30,11 @@ import org.jivesoftware.smack.chat2.IncomingChatMessageListener;
 import org.jivesoftware.smack.packet.Message;
 import org.jxmpp.jid.EntityBareJid;
 import org.jxmpp.jid.impl.JidCreate;
-
 import com.aati.model.Dispositivo;
 import com.aati.model.Mensaje;
-import com.aati.model.Notificacion;
 import com.aati.model.Response;
 import com.aati.util.Util;
 import com.google.gson.Gson;
-import com.sun.jersey.api.client.Client;
-import com.sun.jersey.api.client.ClientResponse;
-import com.sun.jersey.api.client.WebResource;
-import com.sun.jersey.api.client.config.ClientConfig;
-import com.sun.jersey.api.client.config.DefaultClientConfig;
-import com.sun.jersey.client.urlconnection.HTTPSProperties;
 
 
 @ServerEndpoint(value="/openfire")
@@ -111,7 +100,6 @@ public class OFEndpoint {
 	@OnMessage
 	public void message(String mensaje, final Session session) throws IOException{
 		log.info("recibiendo mensaje desde cliente: "+ session);
-	
 		log.info("enviando mensaje a proveedores");
 		try{
 			JSONObject obj = new JSONObject(mensaje);
@@ -129,6 +117,7 @@ public class OFEndpoint {
 			//connect.getChatManager().addIncomingListener(getIncoming());
 	        for(String user : result){
 		        	log.info(">"+user+"<");
+		        	
 		        	List<String> listDevicesForUser=Util.getDevicesForUser(dispositivos, user);
 		            user=user+"@ajustadoati.com";
 		            log.info("User: "+user);
@@ -170,8 +159,9 @@ public class OFEndpoint {
 			log.info("Cerrando websocket actual session");
 			//this.connection.disconnect();
 			mensajes.remove(getMensajeBySession(session));
-			session.close();
 			clientes.remove(session);
+			session.close();
+			
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -180,11 +170,8 @@ public class OFEndpoint {
 	}
 	
 	
-	
-	
-	
 	public static Session getSessionByCode(String code){
-		System.out.println("searching session");
+		System.out.println("searching session"+code);
 		for ( Mensaje mensaje : mensajes) {
 			if(mensaje.getCode().equals(code)){
 				System.out.println("session"+mensaje.getSession());
