@@ -59,11 +59,11 @@ public class OFEndpoint {
 				
   			    System.out.println("New message from " + from + ": " + message.getBody());
   			    System.out.println("Received message from proveedor: " + message.getBody());
-  			    String codearr[]=message.getBody().split("---");
-  			    String code="";
+  			    String codearr[] = message.getBody().split("---");
+  			    Long id=0l;
 	  		    String texto="";
   			    if(codearr.length>1){
-  			    	 code=codearr[0];
+  			    	 id=Long.valueOf(codearr[0]);
 		  			 texto=codearr[1];
   			    }
   			   
@@ -79,7 +79,7 @@ public class OFEndpoint {
 						      // Iterate over the connected sessions
 						      // and broadcast the received message
 						      for(Session cliente : clientes){
-						        if (cliente.equals(getSessionByCode(code))){
+						        if (cliente.equals(getSessionById(id))){
 						          cliente.getBasicRemote().sendText(json);
 						        }
 						      }
@@ -104,6 +104,7 @@ public class OFEndpoint {
 		try{
 			JSONObject obj = new JSONObject(mensaje);
 			Mensaje msj= new Mensaje();
+			msj.setId(obj.getLong("id"));
 			msj.setMensaje(obj.getString("mensaje"));
 			msj.setUsers(obj.getString("users"));	
 			msj.setLatitud(obj.getString("latitud"));
@@ -127,12 +128,12 @@ public class OFEndpoint {
 		  			Chat chat = chatManager.chatWith(jid);
 		  			
 		  			Message ms= new Message();
-		  			ms.setBody(msj.getCode()+"---"+msj.getMensaje()+"---"+msj.getLatitud()+"---"+msj.getLongitud());
+		  			ms.setBody(msj.getId()+"---"+msj.getMensaje()+"---"+msj.getLatitud()+"---"+msj.getLongitud());
 		  			try {
 						chat.send(ms);
 						
 						if(listDevicesForUser!=null && listDevicesForUser.size()>0){
-							Util.sendNotifications(listDevicesForUser, "Hola, Han realizado una solicitud: "+msj.getMensaje());
+							Util.sendNotifications(listDevicesForUser, "Hola, Han realizado una solicitud: "+msj.getMensaje()+", con Id:"+msj.getId());
 						}
 						
 					} catch (NotConnectedException e) {
@@ -170,10 +171,10 @@ public class OFEndpoint {
 	}
 	
 	
-	public static Session getSessionByCode(String code){
-		System.out.println("searching session"+code);
+	public static Session getSessionById(Long id){
+		System.out.println("searching session"+id);
 		for ( Mensaje mensaje : mensajes) {
-			if(mensaje.getCode().equals(code)){
+			if(mensaje.getId().equals(id)){
 				System.out.println("session"+mensaje.getSession());
 				return mensaje.getSession();
 			}

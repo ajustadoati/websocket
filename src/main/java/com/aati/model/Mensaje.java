@@ -16,7 +16,7 @@ public class Mensaje implements Serializable{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	
+	private Long id;
 	private String users;
 	private String mensaje;
 	private String latitud;
@@ -95,6 +95,18 @@ public class Mensaje implements Serializable{
 	 */
 	public void setSession(Session session) {
 		this.session = session;
+	}
+	/**
+	 * @return the id
+	 */
+	public Long getId() {
+		return id;
+	}
+	/**
+	 * @param id the id to set
+	 */
+	public void setId(Long id) {
+		this.id = id;
 	}
 	
 	
